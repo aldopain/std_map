@@ -1,13 +1,18 @@
 Jimp = require 'Jimp'
 fs = require 'fs'
 
-K = 1
+
 
 t0 = 0
 pi = Math.PI
-step = 0.1
 
+# default settings for tests
+K = 1
+step = 0.1
 size = 500
+ranges = [1, 20, 50, 100, 250, 500]
+colors = [0xAADCFAFF, 0xE4F0DAFF, 0xE4F0BEFF, 0xE4F08CFF, 0xE4F064FF, 0xE4F04BFF, 0xE4F032FF, 0xE4F000FF]
+itCount = 100000
 
 arr = []
 
@@ -16,15 +21,10 @@ init = ()->
     arr.push []
 
 setColor = (v)->
-  switch
-    when v == undefined then return 0xAADCFAFF
-    when v < 10 then return 0xE4F0DAFF
-    when v < 20 then return 0xE4F0BEFF
-    when v < 50 then return 0xE4F08CFF
-    when v < 100 then return 0xE4F064FF
-    when v < 250 then return 0xE4F04BFF
-    when v < 500 then return 0xE4F032FF
-    else return 0xE4F000FF
+  if v == undefined then return colors[0]
+  for i in [0...ranges.length]
+    if v < ranges[i] then return colors[i + 1]
+  return colors[colors.length - 1]
 
 show = ()->
   img = new Jimp size, size, (error, img)->
@@ -50,7 +50,7 @@ round = (x)->
   Math.round (x * (size - 11) / (2 * pi)) + 10
 
 Drw1 = (x, y)->
-  for i in [0...100000]
+  for i in [0...itCount]
     tmp = x
     x = mod2Pi (x + K * Math.sin y)
     y = mod2Pi (y + x)
@@ -64,10 +64,11 @@ run = ()->
     Drw1 0, t0
     t0 += step
 
-module.exports = (k, st, sz)->
+module.exports = (k, st, sz, c)->
   K = k
   step = st
   size = sz
+  colors = c
   if !(K > 0) or !(step > 0) or !(size > 0) then return "error"
   run()
   show()
