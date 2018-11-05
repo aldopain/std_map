@@ -10,7 +10,7 @@ pi = Math.PI
 K = 1
 step = 0.1
 size = 500
-ranges = [1, 20, 50, 100, 250, 500]
+ranges = [10, 20, 50, 100, 250, 500]
 colors = [0xAADCFAFF, 0xE4F0DAFF, 0xE4F0BEFF, 0xE4F08CFF, 0xE4F064FF, 0xE4F04BFF, 0xE4F032FF, 0xE4F000FF]
 itCount = 100000
 
