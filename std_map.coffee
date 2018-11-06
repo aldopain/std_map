@@ -1,9 +1,7 @@
 Jimp = require 'Jimp'
 fs = require 'fs'
+# gpu = new GPU()
 
-
-
-t0 = 0
 pi = Math.PI
 
 # default settings for tests
@@ -59,6 +57,7 @@ Drw1 = (x, y)->
 
 run = ()->
   init()
+  t0 = 0
   while t0 <= 2 * pi
     Drw1 t0, 0
     Drw1 0, t0
@@ -70,6 +69,7 @@ module.exports = (k, st, sz, c)->
   size = sz
   colors = c
   if !(K > 0) or !(step > 0) or !(size > 0) then return "error"
+  start = new Date().getTime()
   run()
   show()
-  null
+  "time = " + (new Date().getTime() - start)
