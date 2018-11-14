@@ -1,5 +1,6 @@
 Jimp = require 'Jimp'
 fs = require 'fs'
+Promise = require 'bluebird'
 # gpu = new GPU()
 
 pi = Math.PI
@@ -24,15 +25,17 @@ setColor = (v)->
     if v < ranges[i] then return colors[i + 1]
   return colors[colors.length - 1]
 
-show = ()->
+show = (name)->
   img = new Jimp size, size, (error, img)->
     if error then throw error
     for i in [0...size]
       for j in [0...size]
-        img.setPixelColor setColor(arr[i][j]), j, i
-    img.write './files/test1.jpg', (error)->
-      arr = []
+        color = setColor arr[i][j]
+        img.setPixelColor color, j, i
+    img.write "./files/#{name}.jpg", (error)->
       console.log if error then error else "done"
+    arr = []
+    console.log "erased"
 
 rgbToInt = (r, g, b)->
   (r << 24) + (g << 16) + (b << 8)
@@ -55,21 +58,67 @@ Drw1 = (x, y)->
     if arr[round x][round y] == undefined then arr[round x][round y] = 1
     else arr[round x][round y] += 1
 
-run = ()->
+pDrw1 = (x, y)->
+  new Promise (resolve, reject)->
+    for i in [0...itCount]
+      tmp = x
+      x = mod2Pi (x + K * Math.sin y)
+      y = mod2Pi (y + tmp)
+      if arr[round x][round y] == undefined then arr[round x][round y] = 1
+      else arr[round x][round y] += 1
+
+run = (t0, max, d)->
   init()
-  t0 = 0
-  while t0 <= 2 * pi
-    Drw1 t0, 0
-    Drw1 0, t0
+  while t0 <= max
+    Drw1 t0, d
+    Drw1 d, t0
     t0 += step
 
-module.exports = (k, st, sz, c)->
+pRun = ()->
+  init()
+  t0 = -pi
+  while t0 <= pi
+    pDrw1 t0, 0
+    pDrw1 0, t0
+    t0 += step
+
+module.exports = f1 = (k, st, sz, c, r, runSettings, name)->
+  K = k
+  step = st
+  size = sz
+  #colors = c
+  ranges = r
+  if !(K > 0) or !(step > 0) or !(size > 0) then return "error"
+  start = new Date().getTime()
+  run(runSettings.t0, runSettings.max, runSettings.d)
+  runEnd = new Date().getTime()
+  console.log "run time = " + (runEnd - start)
+  show(name)
+  showEnd = new Date().getTime()
+  console.log "show time = " + (showEnd - runEnd)
+  console.log "total time = " + (showEnd - start)
+  null
+
+f2 = (k, st, sz, c, r)->
   K = k
   step = st
   size = sz
   colors = c
+  ranges = r
   if !(K > 0) or !(step > 0) or !(size > 0) then return "error"
   start = new Date().getTime()
-  run()
-  show()
-  "time = " + (new Date().getTime() - start)
+  pRun()
+  runEnd = new Date().getTime()
+  console.log "run time = " + (runEnd - start)
+  show("pRun")
+  showEnd = new Date().getTime()
+  console.log "show time = " + (showEnd - runEnd)
+  console.log "total time = " + (showEnd - start)
+  null
+
+# lyap = (points)->
+
+f1 1, 0.1, 2000, colors, ranges, { t0: 0, max: 2 * pi, d: 0}, "test1"
+f1 1, 0.1, 2000, colors, ranges, { t0: pi, max: 2 * pi, d: pi}, "test2"
+f1 1, 0.1, 2000, colors, ranges, { t0: -pi, max: 0, d: 0}, "test3"
+f1 1, 0.1, 2000, colors, ranges, { t0: 0, max: 2 * pi, d: 0.5}, "test4"
