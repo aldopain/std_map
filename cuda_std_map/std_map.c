@@ -81,7 +81,7 @@ void Drw1 (float x, float y){
 void run (float step) {
   float s = 0;
   for (float t0 = 0; t0 < 2 * pi; t0 += step) {
-    // printf("%f\n", t0);
+    printf("%f\n", t0);
     Drw1 (s, t0);
     Drw1 (t0, s);
   }
@@ -138,7 +138,7 @@ int main(void)
   printf(name1);
   printf(name2);
 
-  std(1, 0.001, 20000, name1);
+  std(1, 0.01, 1000, name1);
   // std(2, 0.1, 2000, name2);
   // float *d_arr;
 
