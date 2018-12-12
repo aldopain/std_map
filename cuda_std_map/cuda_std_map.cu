@@ -7,6 +7,9 @@
 #include <chrono>
 #include <ctime>
 
+#include <setjmp.h>
+//#include "libjpeg/jpeglib.h"
+
 #define pi 3.14159265358979323846
 #define itCount 100000
 #define tol 0.01
@@ -15,7 +18,7 @@ using namespace std;
 using namespace std::chrono;
 
 float *arr, *d_arr;
-int *buf, *h_buf;
+unsigned short *buf, *h_buf;
 float yOffset = 0;
 float xOffset = 0;
 int p = 0;
@@ -23,8 +26,8 @@ int p = 0;
 int red[3] = { 255, 255, 255 };
 int black[3] = { 255, 0, 0 };
 
-void init (int size) {
-  __int64 buf_size = p*p*itCount*2*sizeof(int);
+void init (unsigned short size) {
+  __int64 buf_size = p*p*itCount*2*sizeof(unsigned short);
   __int64 img_size = size*size*sizeof(float);
 
   cudaMalloc(&d_arr, img_size);
@@ -36,7 +39,7 @@ void init (int size) {
   cout << mem << " MB allocated on GPU" << '\n';
 
   arr = (float*)malloc(img_size);
-  h_buf = (int*)malloc(buf_size);
+  h_buf = (unsigned short*)malloc(buf_size);
 
   for (int i = 0; i < size * size; i++) {
     arr[i] = 0;
@@ -56,14 +59,14 @@ float mod2Pi (float a) {
 }
 
 __device__
-int sround(float v, int i, int size) {
+int sround(float v, int i, unsigned short size) {
   if (v < 0) v += 2 * pi;
   if (v > 2 * pi) v -= 2 * pi;
   return round (v * (size - 1) / (2 * pi));
 }
 
 __device__
-void Drw1 (float x, float y, float *arr, int* buf, int size, float K, int thr){
+void Drw1 (float x, float y, float *arr, unsigned short* buf, unsigned short size, float K, int thr){
   int st = thr * 2 * itCount;
   float ep = 1;
   float eq = 0;
@@ -92,7 +95,7 @@ void Drw1 (float x, float y, float *arr, int* buf, int size, float K, int thr){
 }
 
 __global__
-void run (float step, float *arr, int *buf, int size, float K) {
+void run (float step, float *arr, unsigned short *buf, unsigned short size, float K) {
   int i = blockIdx.x*blockDim.x + threadIdx.x;
   if (i < 2 * pi / step) {
     float pp = i * step;
@@ -101,7 +104,7 @@ void run (float step, float *arr, int *buf, int size, float K) {
   }
 }
 
-void show (char* fileName, int size) {
+void show (char* fileName, unsigned short size) {
   FILE *f = fopen("testr.ppm", "wb");
   fprintf(f, "P6\n%i %i 255\n", size, size);
   float summ = 0;
@@ -134,7 +137,7 @@ void show (char* fileName, int size) {
   fclose(f);
 }
 
-void show2 (char* fileName, int size) {
+void show2 (char* fileName, unsigned short size) {
   float summ = 0;
   for (int y = 0; y < size; y++) {
     for (int x = 0; x < size; x++) {
@@ -150,10 +153,9 @@ __int64 epoch() {
   return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-void std_map (float k, float step, int size, char *fileName) {
+void std_map (float k, float step, unsigned short size, char *fileName) {
   char str[64];
-
-  printf("started\n");
+  cout << "started\n" << "K = " << k << "\nstep = " << step << "\nsize = " << size << '\n';
   p = sqrt(2 * pi/step) + 1;
   init(size);
   printf("init finished\n");
@@ -174,8 +176,25 @@ void std_map (float k, float step, int size, char *fileName) {
   cudaFree(buf);
 }
 
-int main(void)
+float* parse_args (int c, char **args) {
+  float* res = (float*)malloc(3*sizeof(float));
+  res[0] = 1;
+  res[1] = 0.1;
+  res[2] = 1000.0;
+  switch (c) {
+    case 4:
+      res[2] = atof (args[3]);
+    case 3:
+      res[1] = atof (args[2]);
+    case 2:
+      res[0] = atof (args[1]);
+  }
+  return res;
+}
+
+int main(int argc, char *argv[])
 {
   char name1[64] = "qwe1132123.ppm";
-  std_map (1, 0.005, 6000, name1);
+  float* a = parse_args (argc, argv);
+  std_map (a[0], a[1], (unsigned short)a[2], name1);
 }
